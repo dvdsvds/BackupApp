@@ -48,5 +48,5 @@ fs::path make_backup_name(const Config& cfg);
 bool backup(const Config& cfg);
 
 std::chrono::system_clock::time_point cal_cycle(const Config& cfg);
-bool backup_cycle(const Config& cfg);
-void log_message(const std::string& msg)
+void backup_cycle(const Config& cfg);
+void log_message(const std::string& msg);

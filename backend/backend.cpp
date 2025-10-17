@@ -1,5 +1,8 @@
 #include "backend.hpp"
 #include <algorithm>
+#include <atomic>
+#include <fstream>
+
 
 Config parser(int argc, char* argv[]) {
     Config cfg;
@@ -204,3 +207,4 @@ void log_message(const std::string& msg) {
     auto now_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     log << "[" << std::put_time(std::localtime(&now_time), "%F %T") << "] " << msg << "\n";
 }
+
