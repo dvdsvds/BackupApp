@@ -3,6 +3,9 @@
 #include <atomic>
 #include <fstream>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/chrono.h>
+#include <pybind11/stl/filesystem.h>
 
 namespace py = pybind11;
 
@@ -101,52 +104,55 @@ bool validate_paths(const Config& cfg) {
 }
 
 fs::path make_backup_name(const Config& cfg) {
+    tm t_used = cfg.t;
+    if (t_used.tm_year == 0 && t_used.tm_mon == 0 && t_used.tm_mday == 0) {
+        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        t_used = *std::localtime(&now);
+    }
+
     char buffer[32];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", &cfg.t);
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", &t_used);
     std::string date_str = buffer;
 
-    std::string filename;
+    std::string filename = !cfg.newName.empty()
+                           ? cfg.newName
+                           : cfg.src.filename().string();
 
-    if(cfg.mode == Mode::Default) {
-        std::string default_name = cfg.src.filename().string();
-        filename = default_name;
-        if(cfg.include_date) filename += "_" + date_str;
-    } else { 
-        filename = cfg.newName;
-        if(cfg.include_date) filename += "_" + date_str;
-    }
-    fs::path backup_file = cfg.dst / filename;
-    return backup_file;
+    if (cfg.include_date) filename += "_" + date_str;
+
+    return cfg.dst / filename;
 }
 
+
 bool backup(const Config& cfg) {
-    try{ 
+    try { 
         fs::path backup_path = make_backup_name(cfg);
-        std::string parent_path = cfg.src.parent_path().string();
+        std::string src_path = cfg.src.string();
         std::string cmd;
 
         switch (cfg.format)
         {
             case Format::ZIP:
-                cmd = "cd \"" + parent_path + "\" && zip -r \"" + backup_path.string() + ".zip\" \"" + cfg.src.filename().string() + "\"";
+                cmd = "zip -r \"" + backup_path.string() + ".zip\" \"" + src_path + "\"";
                 break;
 
             case Format::RAR:
-                cmd = "cd \"" + parent_path + "\" && rar a \"" + backup_path.string() + ".rar\" \"" + cfg.src.filename().string() + "\"";
+                cmd = "rar a \"" + backup_path.string() + ".rar\" \"" + src_path + "\"";
                 break;
 
             case Format::SEVENZ:
-                cmd = "cd \"" + parent_path + "\" && 7z a \"" + backup_path.string() + ".7z\" \"" + cfg.src.filename().string() + "\"";
+                cmd = "7z a \"" + backup_path.string() + ".7z\" \"" + src_path + "\"";
                 break;
         }
 
         int result = std::system(cmd.c_str());
         return result == 0;
-    } catch(const std::exception& e) {
-        std::cerr << "[Error] Exception in backup() : " << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[Error] Exception in backup(): " << e.what() << std::endl;
         return false;
     }
 }
+
 
 std::chrono::system_clock::time_point cal_cycle(const Config& cfg) {
     auto now = std::chrono::system_clock::now();

@@ -21,6 +21,7 @@ set(SOURCES
 )
 
 pybind11_add_module(backend MODULE ${SOURCES})
+target_link_libraries(backend PRIVATE pybind11::module)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_link_libraries(backend PRIVATE stdc++fs)
@@ -28,7 +29,7 @@ endif()
 
 get_filename_component(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 
-set(GUI_DIR "${ROOT_DIR}/gui/pyd")
+set(GUI_DIR "${ROOT_DIR}/gui/ui/pyd")
 
 file(MAKE_DIRECTORY "${GUI_DIR}")
 
