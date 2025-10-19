@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <atomic>
 #include <fstream>
+#include <pybind11/pybind11.h>
 
+namespace py = pybind11;
 
 Config parser(int argc, char* argv[]) {
     Config cfg;
@@ -199,6 +201,7 @@ void backup_cycle(const Config& cfg) {
     }
 }
 
+
 std::mutex log_mutex;
 
 void log_message(const std::string& msg) {
@@ -208,3 +211,51 @@ void log_message(const std::string& msg) {
     log << "[" << std::put_time(std::localtime(&now_time), "%F %T") << "] " << msg << "\n";
 }
 
+Config parser_py(const std::vector<std::string>& args) {
+    std::vector<char*> argv;
+    argv.reserve(args.size());
+    for (auto& s : args)
+        argv.push_back(const_cast<char*>(s.c_str()));
+
+    return parser(static_cast<int>(args.size()), argv.data());
+}
+
+PYBIND11_MODULE(backend, m) {
+    m.doc() = "C++ backend module for BackupTool";
+
+    m.def("parser", &parser_py, "Parse command line arguments (Python list)");
+    m.def("validate_paths", &validate_paths, "Validate source and destination paths");
+    m.def("backup", &backup, "Execute a backup operation");
+    m.def("backup_cycle", &backup_cycle, "Run backup in cycle mode");
+    m.def("log_message", &log_message, "Write log message to file");
+
+    py::class_<Config>(m, "Config")
+        .def(py::init<>())
+        .def_readwrite("src", &Config::src)
+        .def_readwrite("dst", &Config::dst)
+        .def_readwrite("include_date", &Config::include_date)
+        .def_readwrite("newName", &Config::newName)
+        .def_readwrite("cycle_value", &Config::cycle_value)
+        .def_readwrite("t", &Config::t)
+        .def_readwrite("format", &Config::format)
+        .def_readwrite("mode", &Config::mode)
+        .def_readwrite("cycle", &Config::cycle);
+
+    py::enum_<Format>(m, "Format")
+        .value("ZIP", Format::ZIP)
+        .value("RAR", Format::RAR)
+        .value("SEVENZ", Format::SEVENZ)
+        .export_values();
+
+    py::enum_<Cycle>(m, "Cycle")
+        .value("Hourly", Cycle::Hourly)
+        .value("Daily", Cycle::Daily)
+        .value("Weekly", Cycle::Weekly)
+        .value("Monthly", Cycle::Monthly)
+        .value("Yearly", Cycle::Yearly)
+        .export_values();
+
+    py::enum_<Mode>(m, "Mode")
+        .value("Default", Mode::Default)
+        .export_values();
+}
