@@ -206,7 +206,6 @@ void backup_cycle(const Config& cfg) {
     }
 }
 
-
 std::mutex log_mutex;
 
 void log_message(const std::string& msg) {
