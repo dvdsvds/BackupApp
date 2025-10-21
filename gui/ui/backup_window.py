@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import tkinter.filedialog as fd
-import os, sys
+import os, sys, threading, time
 
 # ────────────────────────────────
 # backend 모듈 불러오기
@@ -142,12 +142,24 @@ def start_backup():
     cfg.format = getattr(backend.Format, fmt.upper())
     cfg.mode = backend.Mode.Default
 
-    log(f"Starting backup → {cfg.newName}.{fmt}")
-    ok = backend.backup(cfg)
-    if ok:
-        log("[OK] Backup completed successfully.")
-    else:
-        log("[FAIL] Backup failed.")
+    log(f"[START] Backup cycle started → every {cfg.cycle_value} {cycle_type.lower()}")
+    log(f"    → name: {cfg.newName}.{fmt}")
+    log(f"    → src : {src}")
+    log(f"    → dst : {dst}")
+
+    # ✅ 주기 백업을 별도 스레드에서 실행
+    def loop():
+        ok = backend.backup(cfg)  # 첫 백업 1회
+        if ok:
+            log("[OK] First backup completed successfully.")
+        else:
+            log("[FAIL] First backup failed.")
+
+        # 이후 주기적 백업 반복
+        backend.backup_cycle(cfg)
+
+    threading.Thread(target=loop, daemon=True).start()
+
 
 def reset_fields():
     src_entry.delete(0, "end")

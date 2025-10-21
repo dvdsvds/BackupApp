@@ -156,9 +156,8 @@ bool backup(const Config& cfg) {
 
 std::chrono::system_clock::time_point cal_cycle(const Config& cfg) {
     auto now = std::chrono::system_clock::now();
-    tm next_t = cfg.t;
-    auto next_time_t = std::mktime(&next_t);
-    next_t = *std::localtime(&next_time_t);
+    std::time_t now_t = std::chrono::system_clock::to_time_t(now);
+    tm next_t = *std::localtime(&now_t);
 
     switch (cfg.cycle)
     {
@@ -169,7 +168,7 @@ std::chrono::system_clock::time_point cal_cycle(const Config& cfg) {
             next_t.tm_mday += cfg.cycle_value;
             break;
         case Cycle::Weekly:
-            next_t.tm_yday += (7 * cfg.cycle_value);
+            next_t.tm_mday += (7 * cfg.cycle_value);
             break;
         case Cycle::Monthly:
             next_t.tm_mon += cfg.cycle_value; 
