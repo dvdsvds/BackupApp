@@ -102,7 +102,7 @@ cycle_entry.pack(side="left", padx=(0, 10))
 
 cycle_opt = ctk.CTkOptionMenu(
     cycle_frame,
-    values=["Hourly", "Daily", "Weekly", "Monthly", "Yearly"],
+    values=["Minutely", "Hourly", "Daily", "Weekly", "Monthly", "Yearly"],
     width=100, font=font_btn
 )
 cycle_opt.pack(side="left")
@@ -149,8 +149,10 @@ def start_backup():
         else:
             log("[FAIL] First backup failed.")
 
-        backend.backup_cycle(cfg)
+        def cycle_thread():
+            backend.backup_cycle(cfg)
 
+        threading.Thread(target=cycle_thread, daemon=True).start()
     threading.Thread(target=loop, daemon=True).start()
 
 

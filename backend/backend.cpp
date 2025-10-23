@@ -161,6 +161,9 @@ std::chrono::system_clock::time_point cal_cycle(const Config& cfg) {
 
     switch (cfg.cycle)
     {
+        case Cycle::Minutely:
+            next_t.tm_min += cfg.cycle_value;
+            break;
         case Cycle::Hourly:
             next_t.tm_hour += cfg.cycle_value;
             break;
@@ -184,6 +187,7 @@ std::chrono::system_clock::time_point cal_cycle(const Config& cfg) {
 std::atomic<bool> running = true;
 
 void backup_cycle(const Config& cfg) {
+    py::gil_scoped_release release;
     int cycle_count = 0;
     auto next_t = cal_cycle(cfg);
 
@@ -252,6 +256,7 @@ PYBIND11_MODULE(backend, m) {
         .export_values();
 
     py::enum_<Cycle>(m, "Cycle")
+        .value("Minutely", Cycle::Minutely)
         .value("Hourly", Cycle::Hourly)
         .value("Daily", Cycle::Daily)
         .value("Weekly", Cycle::Weekly)

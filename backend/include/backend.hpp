@@ -21,6 +21,7 @@ enum class Mode {
 };
 
 enum class Cycle {
+    Minutely,
     Hourly,
     Daily,
     Weekly,
